@@ -3,7 +3,7 @@
 #include "graph2.h"
 #include <cmath>
 using namespace std;
-//TO DO: -try catch block
+//TO DO:
 //-time messen
 
 //modifizieren von Kantengewicht fuer neuer Knoten:
@@ -42,14 +42,40 @@ void addkreis(Graph&g,vector<int>&kreis,vector<double>&modwe,vector<bool>&exknot
     neuekantenge(modwe,g,randomgewicht);//Aktualisiere Kantengewichte
 }
 
-//Suchen vom Kreis
-vector<int>Kreis(int knoten,const vector<int>&F, const Graph&g){
+vector<int>Kreisfinden(int root,vector<int>&F,const Graph&g,vector<bool> & exknoten){
+    vector<bool>visited(g.num_nodes(),false);
     vector<int>kreis;
-    int aktuellerknoten=knoten;
-    do{ 
-        aktuellerknoten=g.get_node(aktuellerknoten).adjacent_nodes()[F[aktuellerknoten]].id();
-        kreis.push_back(aktuellerknoten);
-    }while(aktuellerknoten!=knoten);
+    for(int knoten=0;knoten<g.num_nodes();knoten++){
+        if(F[knoten]!=-1 && exknoten[knoten]&& !visited[knoten]){
+            int aktuellerknoten=knoten;
+            visited[knoten]=true;
+            do{ 
+                visited[aktuellerknoten]=true;
+                aktuellerknoten=g.get_node(aktuellerknoten).adjacent_nodes()[F[aktuellerknoten]].id();
+                kreis.push_back(aktuellerknoten);
+            }while(!visited[aktuellerknoten] && aktuellerknoten!=root);
+            if(aktuellerknoten!=root){
+                aktuellerknoten=g.get_node(aktuellerknoten).adjacent_nodes()[F[aktuellerknoten]].id();
+                vector<int>echterkreis;
+                bool b=false;
+                //cout<<"kreis"<<"\n";
+                for(int i=0;i<kreis.size();i++){
+                    //cout<<kreis[i]<<" ";
+                    if(b){
+                        echterkreis.push_back(kreis[i]);
+                    }
+                    else if(kreis[i]==aktuellerknoten){
+                        b=true;
+                        echterkreis.push_back(kreis[i]);
+                    }
+                }
+                return echterkreis;
+            }
+            else{
+                kreis.clear();
+            }
+        }
+    }
     return kreis;
 }
 
@@ -69,24 +95,17 @@ vector<int> edmon(Graph &g, vector<bool> & exknoten,int root,vector<double>&modw
     }
     //Schauen on Arborezens <-> es gibt keinen Kreis (da der eingehende Grad von jeden Knoten auser wurzel nach knostruktion 1 ist)
     vector<bool>visited(g.num_nodes(),false);
-    vector<int>kreis;
-    for(int knoten=0;knoten<g.num_nodes();knoten++){
-        if(F[knoten]!=-1 && exknoten[knoten]){
-            int nachbar=g.get_node(knoten).adjacent_nodes()[F[knoten]].id();
-            if(visited[nachbar] && nachbar!=root){
-                kreis=Kreis(nachbar,F,g);
-                break;
-            }
-           visited[nachbar]=true;
-        }
-    }
+    vector<int>kreis=Kreisfinden(root,F,g,exknoten);
     if(kreis.empty()){
         return F;//Ist Arborezens sind fertig
     }
     else{
+        //cout<<"neu";
         for(const int& knoten: kreis){//elimienieren Knoten
+            //cout<<knoten<<"\n";
             exknoten[knoten]=false;
         }
+
         int nkid=g.num_nodes();//neuer Knoten id
         addkreis(g,kreis,modwe,exknoten);//Kreis kontrahieren
         vector<int>G=edmon(g,exknoten,root,modwe);
@@ -158,8 +177,14 @@ void anfangedom(Graph &g,int root){
 }
 
 int main(int argc, char* argv[]){ 
-    if (argc > 1) {
-        Graph g(argv[1], Graph::directed);
-        anfangedom(g,0);
-    }
+    //try{
+         if (argc > 1) {
+             Graph g(argv[1], Graph::directed);
+            anfangedom(g,0);
+        }
+   // }
+    /*catch(const exception e){
+        cout<<"Kein korrektes Input"<<"\n";
+    }*/
+
 }
