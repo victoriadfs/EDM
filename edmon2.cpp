@@ -2,9 +2,23 @@
 #include<stdio.h>
 #include "graph2.h"
 #include <cmath>
+#include <chrono>
 using namespace std;
-//TO DO:
-//-time messen
+
+//Programm wurde hiermit kompiliert: clang++ -std=c++17 -o test edmon2.cpp graph2.cpp
+//Kurz zur Programmidee: Wir fuhren Edmons Algorithmus durch, einzig spannende sind Kontraktionen
+//Beim Knotrahieren fuegen wir einen neuen Knoten ein, und verbinden den mit allen Kanten mit denen auch die Knoten fuer den sie stehen verbunden sind,auser welche die auch zur Kontraktionskomponente gehoren
+//Auserdem haben wir einen bool vector der angibt welche knoten nun in unserem Graphen sind, alle Knoten im Knotrahiereten Kreis werden dann auf false gesetzt
+//nach jeder Knotraktion wird die Kantengewichte wie im eigentlichen ALgorithmus modifiziert
+//in einem Array speichern wir uns fuer jeden Knoten in welcher stelle der adjazenzliste der knoten mit der minimalen eingehende Kante ist, so kann man in O(1) hierrauf zugreifen
+
+//Bemerkung zur Veranderung der Graphenklasse:
+//1. Selfloops sind erlaubt
+//2. Es werden zu jeden Knoten sowohl eingehende wie ausgehende Kanten gespeichert
+//3. Zu jeder Kante wurde ihr Kantenid gespeichert
+
+typedef std::chrono::high_resolution_clock highres_clock;
+typedef std::chrono::time_point<highres_clock> Zeitpunkt;
 
 //modifizieren von Kantengewicht fuer neuer Knoten:
 void neuekantenge(vector<double>&modwe,const Graph&g,double randomgewicht){
@@ -177,14 +191,17 @@ void anfangedom(Graph &g,int root){
 }
 
 int main(int argc, char* argv[]){ 
-    //try{
+    try{
          if (argc > 1) {
+            Zeitpunkt start_zeitpunkt = std::chrono::high_resolution_clock::now();
              Graph g(argv[1], Graph::directed);
             anfangedom(g,0);
+            Zeitpunkt stop_zeitpunkt = std::chrono::high_resolution_clock::now();
+            cout<<"Zeitmessung Sekunden: "<<std::chrono::duration_cast<std::chrono::seconds>(stop_zeitpunkt - start_zeitpunkt).count();
         }
-   // }
-    /*catch(const exception e){
+    }
+    catch(const exception e){
         cout<<"Kein korrektes Input"<<"\n";
-    }*/
+    }
 
 }
