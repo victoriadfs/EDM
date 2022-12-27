@@ -8,8 +8,14 @@
 //TO -Do:
 //        mirar si los excesos en push estan bien cambiados
 //        mirar si hay manera mas smart de hacer las aktualizaciones en maxhoh
+//Funciona pero tarda muchooooo:
+//donde mejorar tiempo:
+//1-maxhohe
+//2-maybe kann man den min der zulassigen kante irgendwie zwischenspeichern
+//3-abruf vor dem while wegkriegen
 //bemerkung siempre me interesan los ausgehende Knoten asi que bien
 
+bool bad= false;
 //Wollen uberprufen ob t von s aus erreichtbar ist, sonst gibt es keinen Fluss
 bool exfluss(const Graph& g, const int& s, const int & t, const int& n){
     std::vector <bool> visited(n,false);
@@ -53,6 +59,7 @@ void print(const std::vector <double> &fluss, const int& m, const double& valf){
         if (fluss[i] != 0)
             std::cout<<i<<": "<<fluss[i]<<"\n";
     }
+    std::cout<<"maxflowwert"<<valf;
 }
 
 //Wir inserten die Rueckkanten, zu denen gegben wir als Gewicht die Vorkante
@@ -89,7 +96,7 @@ void initialisierung(const Graph & g,const int & s, const int & t, const int & n
             if (kante.head_id() != t)
                 aktiveknoten[0].emplace_front(kante.head_id());
             ex[kante.head_id()] += kante.edge_weight();
-            ex[0] -= kante.edge_weight();
+            ex[s] -= kante.edge_weight();
             valf += kante.edge_weight();
     }
     //Am Anfang sind keine Kanten zulassig da alle Knoten auf dem selben Level sind
@@ -114,7 +121,8 @@ void push(const Graph & g, const int& t, const int& s, const int & m, const int 
     }
 
     double y = std::min(uf,ex[knoten]);
-    
+    if (y==0) bad=true;
+    std::cout<<"y"<<y<<"\n";
     bool saturierend = false;
     bool gleich = false;
     if (y == uf) saturierend = true;
@@ -131,14 +139,14 @@ void push(const Graph & g, const int& t, const int& s, const int & m, const int 
     //Aktualisiere wert des Praeflusses
     if (knoten == s){
             valf += y;
-        }
-        else if (nachkonten == s){
+    }
+    else if (nachkonten == s){
             valf -= y;
-        }
+    }
 
     //Aktualisieren von exp und aktive Knoten
     ex[knoten] -= y;
-    if (!saturierend || gleich) {
+    if (ex[knoten] == 0) {
         aktiveknoten[dist[knoten]].remove(knoten);
     }
     if (ex[nachkonten] == 0 && nachkonten != t){
@@ -154,7 +162,7 @@ void push(const Graph & g, const int& t, const int& s, const int & m, const int 
     //Aktualisierung von maxhohe
     bool maxhohegefunden = false;
     while (!maxhohegefunden){
-        if (!aktiveknoten[maxhohe].empty() || maxhohe == 0){
+        if (!aktiveknoten[maxhohe].empty() || maxhohe == -1){
             maxhohegefunden = true;
         }
         else {
@@ -163,29 +171,44 @@ void push(const Graph & g, const int& t, const int& s, const int & m, const int 
     }
 }
 
-void relable (const Graph & g, const int& m, const int& knoten, std:: vector <int>& dist, std:: vector <std::list<int> >& aktiveknoten, int & maxhohe, const std:: vector <double> & fluss, const std:: vector <double> &cap, std::vector <std::list<int> >& zulassigekanten){
+void relable (const Graph & g, const int& m, const int& n, const int& knoten, std:: vector <int>& dist, std:: vector <std::list<int> >& aktiveknoten, int & maxhohe, const std:: vector <double> & fluss, const std:: vector <double> &cap, std::vector <std::list<int> >& zulassigekanten){
     int neuehohe=g.num_nodes()*2;
+    //std::cout<<3<<"\n";
     for (const auto & kante: g.get_node(knoten).adjacent_nodes()){
         int kanten_id=kante.edge_id();
-        if ( (kanten_id < m && cap[kanten_id]-fluss[kanten_id]>0) || (kanten_id >= m && fluss[kante.edge_id()] > 0)){
+        if ( (kanten_id < m && ((cap[kanten_id]-fluss[kanten_id]) > 0)) || (kanten_id >= m && fluss[kante.edge_weight()] > 0)){
             neuehohe = std::min(neuehohe, dist[kante.head_id()]);
+           // std::cout<<"kanten";
         }
     }
-
+    //std::cout<<4<<"\n";
     //Aktualisiere Liste Aktiver Knoten, Distanzmarkierung, maxhohe eines aktiven knoten
+    //std::cout<<dist[knoten]<<" "<<neuehohe<<"\n";
+    for (int i = 0; i < n; i++){
+        if (dist[i] == (dist[knoten] + 1)){
+            zulassigekanten[i].remove(knoten);
+        }
+    }
     aktiveknoten[dist[knoten]].remove(knoten);
+    //std::cout<<"hekm"<<"\n";
     dist[knoten] = neuehohe + 1;
+    //std::cout<<"heyy";
     aktiveknoten[dist[knoten]].emplace_front(knoten);
     maxhohe = dist[knoten];
     //Aktualisierung der LIste der zulassigen Kanten
+    int c = 0;
+    //std::cout<<5<<"\n";
     for (int i=0; i < g.get_node(knoten).adjacent_nodes().size(); i++){
         int nachknoten = g.get_node(knoten).adjacent_nodes()[i].head_id();
         int kanten_id = g.get_node(knoten).adjacent_nodes()[i].edge_id();
         int ruck_id = g.get_node(knoten).adjacent_nodes()[i].edge_weight();
-        if ( (dist[nachknoten] == neuehohe) && ((kanten_id < m && cap[kanten_id]-fluss[kanten_id] > 0) || (kanten_id >= m && fluss[ruck_id] > 0))){
+        if ( (dist[nachknoten] == neuehohe) && ((kanten_id < m && ((cap[kanten_id]-fluss[kanten_id]) > 0)) || (kanten_id >= m && fluss[ruck_id] > 0))){
             zulassigekanten[knoten].push_back(i);
+            c++;
         }
     }
+   // std::cout<<6<<"\n";
+    if (c==0) bad=true;
 }
 
 void Goldberg(Graph &g){
@@ -218,15 +241,28 @@ void Goldberg(Graph &g){
     insertrueckkanten(g, cap);
 
     //Ablauf des Algorithmus
-    while (!aktiveknoten[maxhohe].empty()){
+    while (maxhohe >= 0 && !aktiveknoten[maxhohe].empty()){
         int akknoten = aktiveknoten[maxhohe].front();
+        std::cout<<akknoten<<"\n";
+        //Beim Relable konnen zulassige Kanten nicht mehr zulassig werden hier schauen wir, dass wir die richtige nehmen
+        while (!zulassigekanten[akknoten].empty()){
+            if (dist[g.get_node(akknoten).adjacent_nodes()[zulassigekanten[akknoten].front()].head_id()] != dist[akknoten] - 1){
+                zulassigekanten[akknoten].pop_front();
+            }
+            else{
+                break;
+            }
+        }
         if (zulassigekanten[akknoten].empty()){
-            relable(g, m, akknoten, dist, aktiveknoten, maxhohe, fluss, cap, zulassigekanten);
+            std::cout<<1<<"\n";
+            relable(g, m, n, akknoten, dist, aktiveknoten, maxhohe, fluss, cap, zulassigekanten);
         }
         else{
+            std::cout<<2<<"\n";
             int kante = zulassigekanten[akknoten].front();
             push(g, t, s, m, akknoten, kante, fluss, aktiveknoten, zulassigekanten, cap, ex, dist, maxhohe, valf);
         }
+        //if(bad)break;
 
     }
     //valf=valorf(g,fluss);
