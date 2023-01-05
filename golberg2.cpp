@@ -48,6 +48,7 @@ void print(const std::vector <double> &fluss, const int& m, const double& valf){
         if (fluss[i] != 0)
             std::cout<<i<<": "<<fluss[i]<<"\n";
     }
+    std::cout << valf;
 }
 
 //Wir inserten die Rueckkanten, zu denen gegben wir als Gewicht die Vorkante
@@ -135,7 +136,7 @@ void push(const Graph & g, const int& t, const int& s, const int & m, const int 
     if (ex[knoten] == 0) {
         aktiveknoten[dist[knoten]].remove(knoten);
     }
-    if (ex[nachkonten] == 0 && nachkonten != t){
+    if (ex[nachkonten] == 0 && nachkonten != t && nachkonten != s){
         aktiveknoten[dist[nachkonten]].emplace_front(nachkonten);
     }
     ex[nachkonten] += y;
@@ -228,10 +229,10 @@ void Goldberg(Graph &g){
                 push(g, t, s, m, akknoten, kante, fluss, aktiveknoten, zulassigekanten, cap, ex, dist, maxhohe, valf);
             }
         
-            }
-            else {
-                maxhohe--;
-            }
+        }
+        else {
+            maxhohe--;
+        }
     }
     //Ausdrucken vom Fluss
     print(fluss, m, valf);
